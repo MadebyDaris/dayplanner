@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# Day Planner
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A simple day planner application built with React and Django.
+Just a mini project to learn how to use Django and React together.
 
-## Available Scripts
+## Getting Started
 
-In the project directory, you can run:
+To run the React application, you need to have Node.js and npm installed. Open a new terminal, navigate to the root of the project, and run the following commands:
 
-### `npm start`
+```bash
+npm install
+npm start
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+This will start the React development server, and your browser should open to `http://localhost:3000`.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+**Important:** For the React app to work, you also need to have the Django development server running in a separate terminal.
 
-### `npm test`
+## File Structure
+Here are the key files I've created and modified:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+*   **`src/App.js`:** This is the main component of the application. It manages the state of the tasks and handles fetching and creating tasks.
+*   **`src/App.css`:** This file contains some basic styling for the application.
+*   **`src/api.js`:** This file contains the functions that communicate with the Django API. This helps to keep the API logic separate from the components.
 
-### `npm run build`
+## How it Works
+1.  **Fetching Tasks:**
+    *   When the `App` component first loads, it uses the `useEffect` hook to call the `getTasks` function from `src/api.js`.
+    *   The `getTasks` function makes a `fetch` request to `http://localhost:8000/api/tasks/`.
+    *   The Django API responds with a list of tasks in JSON format.
+    *   The `App` component then updates its state with the fetched tasks, and they are displayed on the page.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2.  **Creating Tasks:**
+    *   When you type in the input field and click "Add Task", the `handleCreateTask` function is called.
+    *   This function calls the `createTask` function from `src/api.js`, sending the new task's title, the current date, and time to the Django API.
+    *   The `createTask` function makes a `POST` request to `http://localhost:8000/api/tasks/` with the new task data in the request body.
+    *   The Django API creates the new task in the database and returns the created task as JSON.
+    *   The `App` component then adds the new task to its state, and the new task is displayed on the page.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Experiment and Have Control
+This is a very basic setup to get you started. Here are some ideas for how you can experiment and take control:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+*   **Add more fields:** Modify the `TaskForm` to include a description or a priority for the tasks.
+*   **Update tasks:** Add a button to mark tasks as complete. You'll need to add a new function to `src/api.js` to handle `PUT` requests.
+*   **Delete tasks:** Add a button to delete tasks. You'll need to add a new function to `src/api.js` to handle `DELETE` requests.
+*   **Improve styling:** Experiment with different styles in `src/App.css` to make the application look better.
 
-### `npm run eject`
+I hope this helps you get started with your React and Django application!
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Prerequisites
+*   Node.js and npm
+*   Python and pip
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Installation
+1.  **Clone the repository:**
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+    ```bash
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+2.  **Backend Setup:**
+    ```bash
+    # Create and activate a virtual environment
+    python -m venv planner-backend-django
+    source planner-backend-django/Scripts/activate  # On Windows, use `planner-backend-django\Scripts\activate`
 
-## Learn More
+    # Install backend dependencies
+    pip install -r requirements.txt
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+    # Run database migrations
+    python planner-backend/manage.py migrate
+    ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+3.  **Frontend Setup:**
+    ```bash
+    # Install frontend dependencies
+    npm install
+    ```
 
-### Code Splitting
+## Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1.  **Start the Django development server:**
+    ```bash
+    python planner-backend/manage.py runserver
+    ```
 
-### Analyzing the Bundle Size
+    The backend API will be running at `http://localhost:8000`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+2.  **Start the React development server:**
+    In a new terminal, run:
 
-### Making a Progressive Web App
+    ```bash
+    npm start
+    ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+    The frontend application will be running at `http://localhost:3000`.
 
-### Advanced Configuration
+## Project Structure
+```
+.
+├── planner-backend/      # Django backend
+├── planner-backend-django/ # Django virtual environment
+├── public/               # Public assets for the React app
+├── src/                  # React application source code
+├── .gitignore
+├── package.json
+├── README.md
+└── requirements.txt
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Technologies Used
+*   **Backend:**
+    *   Django
+    *   Django REST Framework
+*   **Frontend:**
+    *   React
+*   **Database:**
+    *   SQLite (for development)

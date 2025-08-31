@@ -2,7 +2,7 @@
 # Django + React Development Manual
 ## Building a Day Planner from Beginner to Advanced
 
-This comprehensive manual covers everything you need to know to build a full-stack day planner application using Django (backend) and React (frontend).
+This comprehensive manual covers everything you need to know to build a full-stack application using Django (backend) and React (frontend).
 
 ---
 
