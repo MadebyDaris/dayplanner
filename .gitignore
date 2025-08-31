@@ -21,3 +21,15 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+planner-backend-django/
+planner-backend/dayplanner/migrations/
+planner-backend/dayplanner/__pycache__/
+planner-backend/tasks/migrations/
+planner-backend/tasks/__pycache__/
+planner-backend/__pycache__/
+planner-backend/db.sqlite3
+.vscode/
+.idea/
+
+package-lock.json
