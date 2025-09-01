@@ -1,8 +1,19 @@
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth.models import User
 from django.http import JsonResponse
 from .models import Task
 from django.shortcuts import get_object_or_404
 import json
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from .models import Task
+from django.shortcuts import get_object_or_404
+import json
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 def api_task_list(request):
     """API endpoint for tasks"""
     if request.method == 'GET':
@@ -21,9 +32,10 @@ def api_task_list(request):
         data = json.loads(request.body)
         task = Task.objects.create(
             title=data['title'],
+            description=data['description'],
             scheduled_date=data['scheduled_date'],
             scheduled_time=data['scheduled_time'],
-            user=request.user
+            user=User.objects.first()
         )
         
         return JsonResponse({
@@ -32,6 +44,7 @@ def api_task_list(request):
             'created': True
         }, status=201)
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 def api_task_detail(request, task_id):
     """API endpoint for specific task"""
     task = get_object_or_404(Task, id=task_id)
