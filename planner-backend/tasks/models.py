@@ -27,34 +27,59 @@ class Task(models.Model):
         help_text="Detailed description of the task"
     )
     scheduled_date = models.DateField(
-        help_text="What date is this task for?"
+        blank=True,
+        null=True,
+        help_text="What date is this task for? (Optional)"
+    )
+    
+    # Updated time handling
+    has_specific_time = models.BooleanField(
+        default=True,
+        help_text="Does this task have a specific time?"
     )
     
     scheduled_time = models.TimeField(
-        help_text="What time is this task scheduled?"
+        blank=True,
+        null=True,
+        help_text="Specific time for the task"
     )
+    
+    # Duration for tasks without specific time
+    duration_hours = models.IntegerField(
+        blank=True,
+        null=True,
+        help_text="Duration in hours (for tasks without specific time)"
+    )
+    
+    duration_minutes = models.IntegerField(
+        blank=True,
+        null=True,
+        help_text="Duration in minutes (for tasks without specific time)"
+    )
+    
     
     completed = models.BooleanField(
         default=False,
         help_text="Is this task done?"
     )
 
-    PRIORITY_CHOICES = [
-        ('low', 'Low Priority'),
-        ('medium', 'Medium Priority'),
-        ('high', 'High Priority'),
-        ('urgent', 'Urgent'),
+    IMPORTANCE_CHOICES = [
+        ('low', 'Low - Nice to have'),
+        ('medium', 'Medium - Should do'),
+        ('high', 'High - Must do'),
+        ('critical', 'Critical - Urgent & Important'),
     ]
 
-    priority = models.CharField(
+    importance = models.CharField(
         max_length=10,
-        choices=PRIORITY_CHOICES,
-        default='medium'
+        choices=IMPORTANCE_CHOICES,
+        default='medium',
+        help_text="How important is this task?"
     )
 
     category = models.ForeignKey(
         Category, 
-        on_delete=models.SET_NULL,  # Don't delete task if category deleted
+        on_delete=models.SET_NULL,
         null=True, 
         blank=True
     )
@@ -66,7 +91,7 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-scheduled_date', '-scheduled_time', 'priority']
+        ordering = ['-importance', '-scheduled_date', '-scheduled_time']
         db_table = 'day_planner_tasks'
         verbose_name = 'Task'
         verbose_name_plural = 'Tasks'
@@ -74,30 +99,63 @@ class Task(models.Model):
         indexes = [
             models.Index(fields=['scheduled_date', 'scheduled_time']),
             models.Index(fields=['user', 'completed']),
+            models.Index(fields=['importance', 'completed']),
         ]
 
     def __str__(self):
-        return f"{self.title} ({self.scheduled_date})"
+        date_str = self.scheduled_date.strftime('%Y-%m-%d') if self.scheduled_date else 'No date'
+        return f"{self.title} ({date_str})"
     
-
     @property
     def is_overdue(self):
-        if not self.completed and self.scheduled_date < timezone.now().date():
+        if not self.completed and self.scheduled_date and self.scheduled_date < timezone.now().date():
             return True
         return False
     
     @property 
     def formatted_time(self):
         """Get nicely formatted time"""
-        return self.scheduled_time.strftime('%I:%M %p')  # 2:30 PM
+        if self.has_specific_time and self.scheduled_time:
+            return self.scheduled_time.strftime('%I:%M %p')
+        return None
+    
+    @property
+    def formatted_duration(self):
+        """Get formatted duration string"""
+        if not self.has_specific_time:
+            hours = self.duration_hours or 0
+            minutes = self.duration_minutes or 0
+            
+            if hours == 0 and minutes == 0:
+                return "Duration not specified"
+            
+            parts = []
+            if hours > 0:
+                parts.append(f"{hours}h")
+            if minutes > 0:
+                parts.append(f"{minutes}m")
+            
+            return " ".join(parts)
+        return None
+    
+    @property
+    def importance_color(self):
+        """Get color for importance level"""
+        colors = {
+            'low': '#10b981',      # green
+            'medium': '#f59e0b',   # yellow/amber
+            'high': '#f97316',     # orange
+            'critical': '#ef4444', # red
+        }
+        return colors.get(self.importance, '#6b7280')
     
     def mark_as_completed(self):
         self.completed = True
         self.save()
+        
     def mark_as_pending(self):
         self.completed = False
         self.save()
-
 
 
 class TaskComment(models.Model):
