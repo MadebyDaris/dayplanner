@@ -1,10 +1,40 @@
-
-
 from django.db import models
-
-
 from django.utils import timezone
 from django.contrib.auth.models import User
+
+class Project(models.Model):
+    """Project model for task categorization"""
+    name = models.CharField(max_length=100, help_text="Project name")
+    slug = models.SlugField(max_length=100, unique=True, help_text="URL-friendly project identifier")
+    description = models.TextField(blank=True, null=True, help_text="Project description")
+    color = models.CharField(max_length=7, default='#3b82f6', help_text="Hex color code for project")
+    is_active = models.BooleanField(default=True, help_text="Is this project active?")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        db_table = 'day_planner_projects'
+        verbose_name = 'Project'
+        verbose_name_plural = 'Projects'
+        unique_together = ['user', 'name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def task_count(self):
+        return self.tasks.count()
+
+    @property
+    def completed_task_count(self):
+        return self.tasks.filter(completed=True).count()
+
+    @property
+    def pending_task_count(self):
+        return self.tasks.filter(completed=False).count()
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -38,10 +68,16 @@ class Task(models.Model):
         help_text="Does this task have a specific time?"
     )
     
-    scheduled_time = models.TimeField(
+    scheduled_start_time = models.TimeField(
         blank=True,
         null=True,
-        help_text="Specific time for the task"
+        help_text="Specific start time for the task (only used if has_specific_time=True)"
+    )
+    
+    scheduled_end_time = models.TimeField(
+        blank=True,
+        null=True,
+        help_text="Specific end time for the task (only used if has_specific_time=True)"
     )
     
     # Duration for tasks without specific time
@@ -83,7 +119,14 @@ class Task(models.Model):
         null=True, 
         blank=True
     )
-    
+
+    project = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Project/category identifier (work, personal, etc.)"
+    )
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,15 +134,17 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-importance', '-scheduled_date', '-scheduled_time']
+        ordering = ['-importance', '-scheduled_date', '-scheduled_start_time']
         db_table = 'day_planner_tasks'
         verbose_name = 'Task'
         verbose_name_plural = 'Tasks'
         
         indexes = [
-            models.Index(fields=['scheduled_date', 'scheduled_time']),
+            models.Index(fields=['scheduled_date', 'scheduled_start_time', 'scheduled_end_time']),
             models.Index(fields=['user', 'completed']),
             models.Index(fields=['importance', 'completed']),
+            models.Index(fields=['project', 'completed']),
+            models.Index(fields=['has_specific_time']),
         ]
 
     def __str__(self):
@@ -108,20 +153,40 @@ class Task(models.Model):
     
     @property
     def is_overdue(self):
-        if not self.completed and self.scheduled_date and self.scheduled_date < timezone.now().date():
+        """Check if task is overdue"""
+        if self.completed or not self.scheduled_date:
+            return False
+            
+        today = timezone.now().date()
+        
+        if self.scheduled_date < today:
             return True
+            
+        # If it's today and has specific time, check if time has passed
+        if (self.scheduled_date == today and self.has_specific_time and self.scheduled_end_time):
+            current_time = timezone.now().time()
+            return self.scheduled_time < current_time
+            
         return False
     
     @property 
-    def formatted_time(self):
-        """Get nicely formatted time"""
-        if self.has_specific_time and self.scheduled_time:
+    def formatted_start_time(self):
+        """Get nicely formatted time for specific start time tasks"""
+        if self.has_specific_time and self.scheduled_start_time:
             return self.scheduled_time.strftime('%I:%M %p')
         return None
     
+    @property 
+    def formatted_end_time(self):
+        """Get nicely formatted time for specific end time tasks"""
+        if self.has_specific_time and self.scheduled_end_time:
+            return self.scheduled_time.strftime('%I:%M %p')
+        return None
+    
+    
     @property
     def formatted_duration(self):
-        """Get formatted duration string"""
+        """Get formatted duration string for duration-based tasks"""
         if not self.has_specific_time:
             hours = self.duration_hours or 0
             minutes = self.duration_minutes or 0
@@ -131,9 +196,11 @@ class Task(models.Model):
             
             parts = []
             if hours > 0:
-                parts.append(f"{hours}h")
+                part = f"{hours} hour" if hours == 1 else f"{hours} hours"
+                parts.append(part)
             if minutes > 0:
-                parts.append(f"{minutes}m")
+                part = f"{minutes} min" if minutes < 60 else f"{minutes} minutes"
+                parts.append(part)
             
             return " ".join(parts)
         return None
@@ -149,6 +216,27 @@ class Task(models.Model):
         }
         return colors.get(self.importance, '#6b7280')
     
+    @property
+    def project_info(self):
+        """Get project information - returns dict with name, color, icon"""
+        if not self.project:
+            return None
+            
+        projects = {
+            'work': {'name': 'Work Tasks', 'color': '#3b82f6'},
+            'personal': {'name': 'Personal', 'color': '#10b981'},
+            'learning': {'name': 'Learning & Development', 'color': '#f59e0b'},
+            'health': {'name': 'Health & Fitness', 'color': '#ef4444'},
+            'finance': {'name': 'Finance & Planning', 'color': '#8b5cf6'},
+            'home': {'name': 'Home & Family', 'color': '#06b6d4'},
+        }
+        
+        return projects.get(self.project, {
+            'name': self.project.title(),
+            'color': '#6b7280',
+            'icon': '📁'
+        })
+    
     def mark_as_completed(self):
         self.completed = True
         self.save()
@@ -157,20 +245,48 @@ class Task(models.Model):
         self.completed = False
         self.save()
 
+    def get_duration_in_minutes(self):
+        """Get total duration in minutes for duration-based tasks"""
+        if not self.has_specific_time:
+            return (self.duration_hours or 0) * 60 + (self.duration_minutes or 0)
+        return None
+    
+    def clean(self):
+        """Model validation"""
+        from django.core.exceptions import ValidationError
+        
+        # Validate time/duration logic
+        if self.has_specific_time:
+            # Clear duration fields if using specific time
+            self.duration_hours = None
+            self.duration_minutes = None
+        else:
+            # Clear time field if using duration
+            self.scheduled_time = None
+            # Validate duration is positive
+            total_minutes = (self.duration_hours or 0) * 60 + (self.duration_minutes or 0)
+            if total_minutes <= 0:
+                raise ValidationError("Duration must be greater than 0 minutes")
+    def save(self, *args, **kwargs):
+        """Override save to run validation"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class TaskComment(models.Model):
-    """Comments on tasks - shows One-to-Many relationship"""
+    """Comments on tasks"""
     task = models.ForeignKey(
         Task, 
         on_delete=models.CASCADE,
-        related_name='comments'  # task.comments.all()
+        related_name='comments'
     )
     
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_comments')
     
     def __str__(self):
-        return f"Comment on {self.task.title}"
+        return f"Comment on {self.task.title} by {self.user.username}"
     
     class Meta:
         db_table = 'day_planner_task_comments'
