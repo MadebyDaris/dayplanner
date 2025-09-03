@@ -5,6 +5,7 @@ const Header = ({ currentPage, setCurrentPage }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'all-tasks', label: 'All Tasks' },
+    { id: 'reports', label: 'Reports' }
   ];
 
   return (

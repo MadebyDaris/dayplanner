@@ -238,6 +238,12 @@ const api = {
     
     return 'An unexpected error occurred';
   },
+
+  getDatabaseType: () => {
+    // This is a placeholder. In a real app, you might have logic
+    // to determine the database type based on the environment.
+    return 'Firebase';
+  },
 };
 
 export { api };
