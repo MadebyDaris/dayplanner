@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { api } from '../../services/api';
 import Header from '../Header';
+import SideBar from '../SideBar';
 import { AuthProvider, useAuth } from '../../services/AuthContext';
 
 import Dashboard from '../../pages/Dashboard';
 import AllTasksPage from '../../pages/AllTasksPage';
 import ReportsPage from '../../pages/ReportsPage';
 import AuthPage from '../../pages/AuthPage';
+import TasksView from '../../pages/TasksView';
 
 
 import LoadingSpinner from '../LoadingSpinner';
@@ -140,73 +142,60 @@ function MainApp() {
   }
   
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0 2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <h1 style={{
-              margin: 0,
-              fontSize: '1.5rem',
-              fontWeight: 'bold'
-            }}>
-              Day Planner
-            </h1>
-            <p style={{
-              margin: 0,
-              opacity: 0.9,
-              fontSize: '0.9rem'
-            }}>
-              Welcome back, {user.displayName || user.email?.split('@')[0]}!
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Left Sidebar */}
+      <SideBar 
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        user={{
+          name: user.displayName || user.email?.split('@')[0] || 'User',
+          role: 'Team Member',
+          company: 'DT Co.'
+        }}
+        onLogout={handleLogout}
+      />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {error && <ErrorMessage message={error} onRetry={loadTasks} />}
 
-      {error && <ErrorMessage message={error} onRetry={loadTasks} />}
-
-      <UserProfile user={user} onLogout={handleLogout} />
-
-
-      <main style={{ paddingBottom: '2rem' }}>
-        {currentPage === 'dashboard' && (
-          <Dashboard
-            tasks={tasks}
-            onTaskUpdated={loadTasks}
-            onTaskDeleted={loadTasks}
-            loadTasks={loadTasks}
-          />
-        )}
-        
-        {currentPage === 'all-tasks' && (
-          <AllTasksPage
-            tasks={tasks}
-            onTaskUpdated={loadTasks}
-            onTaskDeleted={loadTasks}
-          />
-        )}
-        
-        {currentPage === 'reports' && (
-          <ReportsPage
-            tasks={tasks}
-          />
-        )}
-      </main>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+        <main className="flex-1 overflow-auto">
+          {currentPage === 'dashboard' && (
+            <Dashboard
+              tasks={tasks}
+              onTaskUpdated={loadTasks}
+              onTaskDeleted={loadTasks}
+              loadTasks={loadTasks}
+            />
+          )}
+          
+          {currentPage === 'tasks' && (
+            <TasksView
+              tasks={tasks}
+              onTaskUpdated={loadTasks}
+              onTaskDeleted={loadTasks}
+              loadTasks={loadTasks}
+            />
+          )}
+          
+          {currentPage === 'all-tasks' && (
+            <AllTasksPage
+              tasks={tasks}
+              onTaskUpdated={loadTasks}
+              onTaskDeleted={loadTasks}
+            />
+          )}
+          
+          {currentPage === 'reports' && (
+            <ReportsPage
+              tasks={tasks}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
-}
+};
 
 const App = () => {
   return (
@@ -224,6 +213,6 @@ const Content = () => {
   }
 
   return <MainApp />;
-}
+};
 
 export default App;
