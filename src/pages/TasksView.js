@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, CheckCircle2, AlertCircle, Calendar, Clock } from 'lucide-react';
 import TaskForm from '../components/TaskForm';
 import { api } from '../services/api';
+import '../styles/TasksView.css';
 
 // Status color mapping
 const statusColors = {
@@ -42,20 +43,9 @@ const StatusBadge = ({ task }) => {
   }
   
   return (
-    <div className="flex items-center gap-2">
-      <div 
-        className="w-2 h-2 rounded-full" 
-        style={{ backgroundColor: config.dot }}
-      />
-      <span 
-        className="px-3 py-1 rounded-full text-xs font-semibold capitalize"
-        style={{ 
-          backgroundColor: config.bg,
-          color: config.text
-        }}
-      >
-        {status}
-      </span>
+    <div className="status-badge" style={{ backgroundColor: config.bg, color: config.text }}>
+      <div className="status-dot" style={{ backgroundColor: config.dot }}/>
+      <span>{status}</span>
     </div>
   );
 };
@@ -67,7 +57,7 @@ const ProjectBadge = ({ project }) => {
   
   return (
     <span 
-      className="px-2 py-1 rounded-full text-xs font-semibold text-white"
+      className="project-badge"
       style={{ backgroundColor: projectInfo.color }}
     >
       {projectInfo.name}
@@ -114,32 +104,19 @@ const TaskRow = ({ task, onToggleComplete, onDelete }) => {
   };
 
   return (
-    <div className={`grid grid-cols-12 gap-4 items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${task.completed ? 'opacity-60' : ''}`}>
-      {/* Task Title & Project */}
-      <div className="col-span-4">
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-1 h-8 rounded-full" 
-            style={{ backgroundColor: priorityColors[task.importance] || priorityColors.medium }}
-          />
-          <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold text-gray-900 truncate ${task.completed ? 'line-through' : ''}`}>
-              {task.title}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <ProjectBadge project={task.project} />
-              {task.description && (
-                <span className="text-xs text-gray-500 truncate">
-                  {task.description.substring(0, 50)}...
-                </span>
-              )}
-            </div>
+    <div className={`task-row ${task.completed ? 'completed' : ''}`}>
+      <div className="task-title-cell">
+        <div className="priority-indicator" style={{ backgroundColor: priorityColors[task.importance] || priorityColors.medium }}/>
+        <div>
+          <h3 className="task-title">{task.title}</h3>
+          <div className="task-meta">
+            <ProjectBadge project={task.project} />
+            {task.description && <p className="task-description">{task.description}</p>}
           </div>
         </div>
       </div>
 
-      {/* Due Date */}
-      <div className="col-span-2">
+      <div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Calendar size={14} />
           <span>{formatDate(task.scheduled_date)}</span>
@@ -152,41 +129,19 @@ const TaskRow = ({ task, onToggleComplete, onDelete }) => {
         )}
       </div>
 
-      {/* Status */}
-      <div className="col-span-2">
+      <div>
         <StatusBadge task={task} />
       </div>
 
-      {/* Priority */}
-      <div className="col-span-2">
-        <span 
-          className="px-2 py-1 rounded-full text-xs font-semibold text-white capitalize"
-          style={{ backgroundColor: priorityColors[task.importance] || priorityColors.medium }}
-        >
-          {task.importance || 'medium'}
-        </span>
+      <div>
+        <span className="priority-text">{task.importance}</span>
       </div>
 
-      {/* Actions */}
-      <div className="col-span-2 flex items-center justify-end gap-2">
-        <button 
-          onClick={handleComplete}
-          disabled={loading}
-          className={`p-2 rounded-lg transition-colors ${
-            task.completed 
-              ? 'text-green-600 bg-green-50 hover:bg-green-100' 
-              : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-          }`}
-          title={task.completed ? "Mark as incomplete" : "Mark as complete"}
-        >
+      <div className="task-actions">
+        <button onClick={handleComplete} disabled={loading} className="action-btn">
           <CheckCircle2 size={18} />
         </button>
-        <button 
-          onClick={handleDelete}
-          disabled={loading}
-          className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-          title="Delete task"
-        >
+        <button onClick={handleDelete} disabled={loading} className="action-btn">
           <AlertCircle size={18} />
         </button>
       </div>
@@ -196,48 +151,29 @@ const TaskRow = ({ task, onToggleComplete, onDelete }) => {
 
 const TasksHeader = ({ tasksCount, onAddTask, searchTerm, setSearchTerm }) => {
   return (
-    <div className="bg-white p-6 border-b border-gray-200">
-      <div className="flex items-center justify-between">
+    <div className="tasks-header">
+      <div className="tasks-header-top">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">To Do's</h1>
-          <p className="text-gray-600 mt-1">{tasksCount} tasks</p>
+          <h1 className="tasks-title">To Do's</h1>
+          <p className="tasks-count">{tasksCount} tasks</p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          
-          {/* Add Task Button */}
-          <button 
-            onClick={onAddTask}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
+        <div className="tasks-header-actions">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <button onClick={onAddTask} className="add-task-btn">
             <Plus size={18} />
             Create New Task
           </button>
         </div>
       </div>
-      
-      {/* Filter Tabs */}
-      <div className="flex gap-6 mt-6">
+      <div className="filter-tabs">
         {['All', 'Pending', 'Completed', 'Overdue'].map((tab, index) => (
-          <button
-            key={tab}
-            className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-colors ${
-              index === 0 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
+          <button key={tab} className={`filter-tab ${index === 0 ? 'active' : ''}`}>
             {tab}
           </button>
         ))}
@@ -247,38 +183,24 @@ const TasksHeader = ({ tasksCount, onAddTask, searchTerm, setSearchTerm }) => {
 };
 
 const TaskTable = ({ tasks, onToggleComplete, onDelete, searchTerm }) => {
-  // Filter tasks based on search term
   const filteredTasks = tasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="bg-white">
-      {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 items-center p-4 border-b border-gray-200 bg-gray-50">
-        <div className="col-span-4">
-          <span className="text-sm font-semibold text-gray-700">Task</span>
-        </div>
-        <div className="col-span-2">
-          <span className="text-sm font-semibold text-gray-700">Due Date</span>
-        </div>
-        <div className="col-span-2">
-          <span className="text-sm font-semibold text-gray-700">Status</span>
-        </div>
-        <div className="col-span-2">
-          <span className="text-sm font-semibold text-gray-700">Priority</span>
-        </div>
-        <div className="col-span-2">
-          <span className="text-sm font-semibold text-gray-700">Actions</span>
-        </div>
+    <div className="task-table">
+      <div className="task-table-header">
+        <span>Task</span>
+        <span>Due Date</span>
+        <span>Status</span>
+        <span>Priority</span>
+        <span>Actions</span>
       </div>
-
-      {/* Table Body */}
-      <div className="divide-y divide-gray-100">
+      <div>
         {filteredTasks.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {searchTerm ? 'No tasks match your search.' : 'No tasks found. Create your first task!'}
+          <div className="no-tasks-found">
+            <p>{searchTerm ? 'No tasks match your search.' : 'No tasks found. Create your first task!'}</p>
           </div>
         ) : (
           filteredTasks.map((task) => (
@@ -295,7 +217,6 @@ const TaskTable = ({ tasks, onToggleComplete, onDelete, searchTerm }) => {
   );
 };
 
-// Main TasksView Component
 const TasksView = ({ tasks, onTaskUpdated, onTaskDeleted, loadTasks }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -310,7 +231,7 @@ const TasksView = ({ tasks, onTaskUpdated, onTaskDeleted, loadTasks }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="tasks-view-container">
       <TasksHeader 
         tasksCount={tasks.length}
         onAddTask={handleAddTask}
@@ -319,7 +240,7 @@ const TasksView = ({ tasks, onTaskUpdated, onTaskDeleted, loadTasks }) => {
       />
       
       {showAddForm && (
-        <div className="bg-white border-b border-gray-200 p-6">
+        <div className="add-task-form-container">
           <TaskForm 
             onTaskCreated={handleTaskCreated}
             onCancel={() => setShowAddForm(false)}
@@ -327,14 +248,12 @@ const TasksView = ({ tasks, onTaskUpdated, onTaskDeleted, loadTasks }) => {
         </div>
       )}
       
-      <div className="flex-1 overflow-auto">
-        <TaskTable 
-          tasks={tasks}
-          onToggleComplete={onTaskUpdated}
-          onDelete={onTaskDeleted}
-          searchTerm={searchTerm}
-        />
-      </div>
+      <TaskTable 
+        tasks={tasks}
+        onToggleComplete={onTaskUpdated}
+        onDelete={onTaskDeleted}
+        searchTerm={searchTerm}
+      />
     </div>
   );
 };

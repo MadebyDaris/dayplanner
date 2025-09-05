@@ -1,99 +1,98 @@
-import React from 'react';
-import { BarChart3, CheckCircle2, Clock, User, Settings, Bell, LogOut, Calendar, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronsUpDown, PlusCircle, LogOut, Settings, Users, Home, CheckSquare, Calendar, BarChart3, Moon, Sun } from 'lucide-react';
+import '../styles/SideBar.css';
 
-const SideBar = ({ currentPage, setCurrentPage, user, onLogout }) => {
-  const navigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'tasks', label: 'My Tasks', icon: CheckCircle2 },
-    { id: 'all-tasks', label: 'All Tasks', icon: Calendar },
-    { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'activity', label: 'Activity', icon: Clock },
-  ];
+import { useTheme } from '../services/ThemeContext';
 
-  const Avatar = ({ user, size = "md" }) => {
-    const sizes = {
-      sm: "w-8 h-8 text-sm",
-      md: "w-10 h-10 text-base",
-      lg: "w-12 h-12 text-lg"
+const SideBar = ({ currentPage, setCurrentPage, user, onLogout, currentTeam, userTeams, switchTeam }) => {
+    const { theme, toggleTheme } = useTheme();
+    const [isTeamSwitcherOpen, setIsTeamSwitcherOpen] = useState(false);
+
+    const handleSwitchTeam = (team) => {
+        switchTeam(team);
+        setIsTeamSwitcherOpen(false);
     };
 
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const navigationItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: Home },
+        { id: 'tasks', label: 'My Tasks', icon: CheckSquare },
+        { id: 'agenda', label: 'Agenda', icon: Calendar },
+        { id: 'reports', label: 'Reports', icon: BarChart3 },
+        { id: 'team', label: 'Team', icon: Users },
+    ];
+
+    if (!user) {
+        return null; // Or a loading spinner
+    }
 
     return (
-      <div 
-        className={`${sizes[size]} rounded-full flex items-center justify-center text-white font-semibold bg-blue-600`}
-        title={user.name}
-      >
-        {initials}
-      </div>
+        <div className="sidebar">
+            <div className="sidebar-header">
+                <div className="team-switcher">
+                    <button onClick={() => setIsTeamSwitcherOpen(!isTeamSwitcherOpen)} className="team-switcher-button">
+                        <div className="team-info">
+                            <div className="team-icon" style={{ backgroundColor: currentTeam?.color || '#3b82f6' }}>
+                                {currentTeam?.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="team-name">{currentTeam?.name || 'Select a Team'}</span>
+                        </div>
+                        <ChevronsUpDown size={18} />
+                    </button>
+                    {isTeamSwitcherOpen && (
+                        <div className="team-dropdown">
+                            {userTeams.map(({ team }) => (
+                                <div key={team.id} onClick={() => handleSwitchTeam(team)} className="team-dropdown-item">
+                                    <div className="team-icon" style={{ backgroundColor: team.color }}>
+                                        {team.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span>{team.name}</span>
+                                </div>
+                            ))}
+                            <div className="team-dropdown-divider"></div>
+                            <button className="team-dropdown-action">
+                                <PlusCircle size={16} />
+                                <span>Create or Join Team</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <nav className="sidebar-nav">
+                <ul className="nav-list">
+                    {navigationItems.map(item => (
+                        <li key={item.id} className={`nav-item ${currentPage === item.id ? 'active' : ''}`}>
+                            <button onClick={() => setCurrentPage(item.id)} className="nav-button">
+                                <item.icon size={20} />
+                                <span>{item.label}</span>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+
+            <div className="sidebar-footer">
+                <div className="user-profile">
+                    <img 
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=3b82f6&color=fff`}
+                        alt={user.name} 
+                        className="user-avatar"
+                    />
+                    <div className="user-details">
+                        <span className="user-name">{user.name}</span>
+                        <span className="user-email">{user.email}</span>
+                    </div>
+                </div>
+                <div className="sidebar-actions">
+                    <button onClick={toggleTheme} className="action-button">
+                        {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                    </button>
+                    <button className="action-button"><Settings size={18} /></button>
+                    <button onClick={onLogout} className="action-button"><LogOut size={18} /></button>
+                </div>
+            </div>
+        </div>
     );
-  };
-
-  return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 bg-white rounded-sm"></div>
-          </div>
-          <span className="text-xl font-bold text-gray-900">{user.company}</span>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            
-            return (
-              <li key={item.id}>
-                <button
-                  onClick={() => setCurrentPage(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* User Profile */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <Avatar user={user} size="md" />
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 truncate">{user.name}</p>
-            <p className="text-sm text-gray-500 truncate">{user.role}</p>
-          </div>
-          <Settings size={16} className="text-gray-400" />
-        </div>
-        
-        <div className="flex gap-2 mt-3">
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
-            <Bell size={16} />
-            Profile
-          </button>
-          <button 
-            onClick={onLogout}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-          >
-            <LogOut size={16} />
-            Log Out
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 export default SideBar;

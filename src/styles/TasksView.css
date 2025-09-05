@@ -1,0 +1,154 @@
+/* TasksView.css */
+
+.tasks-view-container {
+    padding: 20px;
+}
+
+.tasks-header {
+    background-color: var(--background-secondary);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.tasks-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tasks-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.tasks-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.tasks-header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+}
+
+.add-task-btn {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.filter-tabs {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-tab {
+    padding-bottom: 10px;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.filter-tab.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+
+.task-table {
+    background-color: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.task-table-header {
+    display: grid;
+    grid-template-columns: 4fr 2fr 2fr 2fr 2fr;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.task-row {
+    display: grid;
+    grid-template-columns: 4fr 2fr 2fr 2fr 2fr;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.task-row:last-child {
+    border-bottom: none;
+}
+
+.task-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.priority-indicator {
+    width: 4px;
+    height: 24px;
+    border-radius: 2px;
+}
+
+.task-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.task-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.task-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.action-btn:hover {
+    color: var(--accent-color);
+}

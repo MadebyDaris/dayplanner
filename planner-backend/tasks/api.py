@@ -20,8 +20,8 @@ def serialize_task(task):
         'completed': task.completed,
         'scheduled_date': task.scheduled_date.strftime('%Y-%m-%d') if task.scheduled_date else None,
         'has_specific_time': task.has_specific_time,
-        'scheduled_start_time': task.scheduled_time.strftime('%H:%M') if task.scheduled_start_time else None,
-        'scheduled_end_time': task.scheduled_time.strftime('%H:%M') if task.scheduled_end_time else None,
+        'scheduled_start_time': task.scheduled_start_time.strftime('%H:%M') if task.scheduled_start_time else None,
+        'scheduled_end_time': task.scheduled_end_time.strftime('%H:%M') if task.scheduled_end_time else None,
         'duration_hours': task.duration_hours,
         'duration_minutes': task.duration_minutes,
         'importance': task.importance,
@@ -30,7 +30,7 @@ def serialize_task(task):
         'project': task.project,
         'project_info': project_info,
         'formatted_start_time': task.formatted_start_time,
-        'formatted_start_time': task.formatted_end_time,
+        'formatted_end_time': task.formatted_end_time,
         'formatted_duration': task.formatted_duration,
         'is_overdue': task.is_overdue,
         'created_at': task.created_at.isoformat(),
@@ -102,8 +102,8 @@ def api_task_list(request):
             if data.get('scheduled_date'):
                 task_data['scheduled_date'] = data['scheduled_date']
             
-            # Handle time vs duration
-            if data.get['has_specific_time']:
+            # Handle time vs duration - Fixed the syntax error
+            if data.get('has_specific_time'):
                 if data.get('scheduled_start_time') and data.get('scheduled_end_time'):
                     task_data['scheduled_start_time'] = data['scheduled_start_time']
                     task_data['scheduled_end_time'] = data['scheduled_end_time']
@@ -118,8 +118,6 @@ def api_task_list(request):
                 
                 task_data['duration_hours'] = duration_hours
                 task_data['duration_minutes'] = duration_minutes
-
-                task_data['scheduled_time'] = None
             
             task = Task.objects.create(**task_data)
             
@@ -131,6 +129,7 @@ def api_task_list(request):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
         except Exception as e:
+            logger.error(f"Error creating task: {str(e)}")
             return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
@@ -188,8 +187,9 @@ def api_task_detail(request, task_id):
                         
                         task.duration_hours = hours
                         task.duration_minutes = minutes
-                    # Clear time field
-                    task.scheduled_time = None
+                    # Clear time fields
+                    task.scheduled_start_time = None
+                    task.scheduled_end_time = None
                 
                 task.save()
                 

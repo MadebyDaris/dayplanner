@@ -1,99 +1,23 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { api } from '../../services/api';
-import Header from '../Header';
 import SideBar from '../SideBar';
 import { AuthProvider, useAuth } from '../../services/AuthContext';
 
 import Dashboard from '../../pages/Dashboard';
 import AllTasksPage from '../../pages/AllTasksPage';
+import AgendaPage from '../../pages/AgendaPage';
 import ReportsPage from '../../pages/ReportsPage';
 import AuthPage from '../../pages/AuthPage';
 import TasksView from '../../pages/TasksView';
 
-
 import LoadingSpinner from '../LoadingSpinner';
 import ErrorMessage from '../ErrorMessage';
+import { ThemeProvider } from '../../services/ThemeContext';
 
 const useRouter = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   return { currentPage, setCurrentPage };
-};
-
-const UserProfile = ({ user, onLogout }) => {
-  const [showProfile, setShowProfile] = useState(false);
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={() => setShowProfile(!showProfile)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          color: 'white',
-          padding: '0.5rem 1rem',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '0.9rem'
-        }}
-      >
-        <span>👤</span>
-        <span>{user.displayName || user.email}</span>
-        <span style={{ fontSize: '0.7rem' }}>▼</span>
-      </button>
-
-      {showProfile && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          marginTop: '0.5rem',
-          background: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-          padding: '1rem',
-          minWidth: '200px',
-          zIndex: 50,
-          border: '1px solid #e5e7eb'
-        }}>
-          <div style={{ marginBottom: '0.75rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.75rem' }}>
-            <div style={{ fontWeight: '600', color: '#1f2937' }}>
-              {user.displayName || 'User'}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-              {user.email}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-              Using {api.getDatabaseType()} Database
-            </div>
-          </div>
-          
-          <button
-            onClick={() => {
-              setShowProfile(false);
-              onLogout();
-            }}
-            style={{
-              width: '100%',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: '500'
-            }}
-          >
-            🚪 Sign Out
-          </button>
-        </div>
-      )}
-    </div>
-  );
 };
 
 function MainApp() {
@@ -101,7 +25,7 @@ function MainApp() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user, logout } = useAuth();
+  const { user, userProfile, currentTeam, logout, userTeams, switchTeam } = useAuth();
 
   const loadTasks = async () => {
     setLoading(true);
@@ -142,24 +66,29 @@ function MainApp() {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="app-container">
       {/* Left Sidebar */}
       <SideBar 
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         user={{
-          name: user.displayName || user.email?.split('@')[0] || 'User',
-          role: 'Team Member',
-          company: 'DT Co.'
+          name: userProfile?.displayName || user.displayName || user.email?.split('@')[0] || 'User',
+          role: currentTeam ? 'Team Member' : 'Individual User',
+          company: currentTeam?.name || 'Personal',
+          photoURL: userProfile?.photoURL,
+          email: userProfile?.email
         }}
         onLogout={handleLogout}
+        currentTeam={currentTeam}
+        userTeams={userTeams}
+        switchTeam={switchTeam}
       />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col main-content">
         {error && <ErrorMessage message={error} onRetry={loadTasks} />}
 
-        <main className="flex-1 overflow-auto">
+        <main className="overflow-auto">
           {currentPage === 'dashboard' && (
             <Dashboard
               tasks={tasks}
@@ -191,16 +120,43 @@ function MainApp() {
               tasks={tasks}
             />
           )}
+
+          {currentPage === 'agenda' && (
+            <AgendaPage
+              tasks={tasks}
+              onTaskUpdated={loadTasks}
+              onTaskDeleted={loadTasks}
+              loadTasks={loadTasks}
+            />
+          )}
+
+          {currentPage === 'team' && (
+            <div className="team-placeholder">
+              <div className="placeholder-content">
+                <h1>Team Collaboration</h1>
+                <p>Team features coming soon!</p>
+                {currentTeam && (
+                  <div className="current-team-info">
+                    <h3>Current Team: {currentTeam.name}</h3>
+                    <p>{currentTeam.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
 };
 
+
 const App = () => {
   return (
     <AuthProvider>
-      <Content />
+      <ThemeProvider>
+        <Content />
+      </ThemeProvider>
     </AuthProvider>
   );
 };

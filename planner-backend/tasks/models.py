@@ -2,6 +2,56 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
+class Team(models.Model):
+    """Team model for organizing users"""
+    name = models.CharField(max_length=100, help_text="Team name")
+    description = models.TextField(blank=True, null=True, help_text="Team description")
+    color = models.CharField(max_length=7, default='#3b82f6', help_text="Team color (hex)")
+    is_active = models.BooleanField(default=True, help_text="Is this team active?")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_teams')
+    members = models.ManyToManyField(User, through='TeamMembership', related_name='teams')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        db_table = 'day_planner_teams'
+        verbose_name = 'Team'
+        verbose_name_plural = 'Teams'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def member_count(self):
+        return self.teammembership_set.filter(is_active=True).count()
+
+    @property
+    def task_count(self):
+        return Task.objects.filter(user__in=self.members.all()).count()
+
+class TeamMembership(models.Model):
+    """Many-to-many relationship between users and teams with additional fields"""
+    ROLE_CHOICES = [
+        ('owner', 'Owner'),
+        ('admin', 'Administrator'),
+        ('member', 'Member'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    is_active = models.BooleanField(default=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'team')
+        db_table = 'day_planner_team_memberships'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.team.name} ({self.role})"
+
 class Project(models.Model):
     """Project model for task categorization"""
     name = models.CharField(max_length=100, help_text="Project name")
@@ -10,6 +60,7 @@ class Project(models.Model):
     color = models.CharField(max_length=7, default='#3b82f6', help_text="Hex color code for project")
     is_active = models.BooleanField(default=True, help_text="Is this project active?")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects', null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,9 +179,9 @@ class Task(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='tasks', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -145,6 +196,7 @@ class Task(models.Model):
             models.Index(fields=['importance', 'completed']),
             models.Index(fields=['project', 'completed']),
             models.Index(fields=['has_specific_time']),
+            models.Index(fields=['team']),
         ]
 
     def __str__(self):
@@ -165,7 +217,7 @@ class Task(models.Model):
         # If it's today and has specific time, check if time has passed
         if (self.scheduled_date == today and self.has_specific_time and self.scheduled_end_time):
             current_time = timezone.now().time()
-            return self.scheduled_time < current_time
+            return self.scheduled_end_time < current_time
             
         return False
     
@@ -173,14 +225,14 @@ class Task(models.Model):
     def formatted_start_time(self):
         """Get nicely formatted time for specific start time tasks"""
         if self.has_specific_time and self.scheduled_start_time:
-            return self.scheduled_time.strftime('%I:%M %p')
+            return self.scheduled_start_time.strftime('%I:%M %p')
         return None
     
     @property 
     def formatted_end_time(self):
         """Get nicely formatted time for specific end time tasks"""
         if self.has_specific_time and self.scheduled_end_time:
-            return self.scheduled_time.strftime('%I:%M %p')
+            return self.scheduled_end_time.strftime('%I:%M %p')
         return None
     
     
@@ -262,11 +314,13 @@ class Task(models.Model):
             self.duration_minutes = None
         else:
             # Clear time field if using duration
-            self.scheduled_time = None
+            self.scheduled_start_time = None
+            self.scheduled_end_time = None
             # Validate duration is positive
             total_minutes = (self.duration_hours or 0) * 60 + (self.duration_minutes or 0)
             if total_minutes <= 0:
                 raise ValidationError("Duration must be greater than 0 minutes")
+    
     def save(self, *args, **kwargs):
         """Override save to run validation"""
         self.full_clean()
@@ -283,7 +337,7 @@ class TaskComment(models.Model):
     
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_comments', null=True)
     
     def __str__(self):
         return f"Comment on {self.task.title} by {self.user.username}"
